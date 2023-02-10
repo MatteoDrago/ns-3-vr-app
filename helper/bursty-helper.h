@@ -51,8 +51,9 @@ public:
    *        A typical value would be ns3::UdpSocketFactory.
    * \param address the address of the remote node to send traffic
    *        to.
+   * \param type what BurstyApplication we should create (default one is the base class)
    */
-  BurstyHelper (std::string protocol, Address address);
+  BurstyHelper(std::string protocol, Address address, std::string type = "ns3::BurstyApplication");
 
   /**
    * Helper function used to set the underlying application attributes.

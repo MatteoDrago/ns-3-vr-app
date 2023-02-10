@@ -32,9 +32,9 @@
 
 namespace ns3 {
 
-BurstyHelper::BurstyHelper (std::string protocol, Address address)
+BurstyHelper::BurstyHelper(std::string protocol, Address address, std::string type)
 {
-  m_burstyApplicationFactory.SetTypeId ("ns3::BurstyApplication");
+  m_burstyApplicationFactory.SetTypeId (type);
   m_burstyApplicationFactory.Set ("Protocol", StringValue (protocol));
   m_burstyApplicationFactory.Set ("Remote", AddressValue (address));
 }

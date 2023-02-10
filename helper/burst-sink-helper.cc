@@ -24,9 +24,9 @@
 
 namespace ns3 {
 
-BurstSinkHelper::BurstSinkHelper (std::string protocol, Address address)
+BurstSinkHelper::BurstSinkHelper (std::string protocol, Address address, std::string type)
 {
-  m_factory.SetTypeId ("ns3::BurstSink");
+  m_factory.SetTypeId (type);
   m_factory.Set ("Protocol", StringValue (protocol));
   m_factory.Set ("Local", AddressValue (address));
 }

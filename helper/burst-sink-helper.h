@@ -40,12 +40,13 @@ public:
    *
    * \param protocol the name of the protocol to use to receive traffic
    *        This string identifies the socket factory type used to create
-   *        sockets for the applications. A typical value would be 
+   *        sockets for the applications. A typical value would be
    *        ns3::UdpSocketFactory.
-   * \param address the address of the sink,
+   * \param address the address of the sink.
+   * \param type what BurstSink we should create (default one is the base class)
    *
    */
-  BurstSinkHelper (std::string protocol, Address address);
+  BurstSinkHelper (std::string protocol, Address address, std::string type = "ns3::BurstSink");
 
   /**
    * Helper function used to set the underlying application attributes.
