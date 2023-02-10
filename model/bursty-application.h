@@ -88,6 +88,12 @@ public:
 
   BurstyApplication ();
 
+  /**
+   * \brief Class constructor that accepts remote address to send data to
+   * \param remote Address of the remote node to send data to
+   */
+  BurstyApplication(Address remote);
+
   virtual ~BurstyApplication ();
 
   /**
@@ -120,31 +126,39 @@ public:
    */
   uint64_t GetTotalTxBytes (void) const;
 
-protected:
-  virtual void DoDispose (void);
-
-private:
-  // inherited from Application base class.
-  virtual void StartApplication (void); // Called at time specified by Start
-  virtual void StopApplication (void); // Called at time specified by Stop
-
-  //helpers
   /**
-   * \brief Cancel all pending events.
+   * \brief Set the remote address
+   * \param remote Address of the remote node to send data to
    */
-  void CancelEvents ();
+  void SetRemote(Address remote);
+
+  /**
+   * \brief Setup the BurstGenerator
+   * \param bG instance of BurstGenerator (or its derived class)
+   */
+  void SetBurstGenerator(Ptr<BurstGenerator> bG);
+
+  /**
+   * \brief Setup the fragment size
+   * \param frag size of the generated fragment
+   */
+  void SetFragmentSize(uint32_t frag);
+
+protected:
+
+  virtual void DoDispose (void);
 
   // Event handlers
   /**
    * \brief Sends a packet burst and schedules the next one
    */
-  void SendBurst ();
+  virtual void SendBurst ();
 
   /**
    * \brief Send burst fragmented into multiple packets
    * \param burstSize the size of the burst in Bytes
    */
-  void SendFragmentedBurst (uint32_t burstSize);
+  virtual void SendFragmentedBurst (uint32_t burstSize);
 
   /**
    * \brief Send a single fragment
@@ -153,8 +167,32 @@ private:
    * \param totFrags the number of fragments composing the burst
    * \param fragmentSeq the sequence number of the fragment
    */
-  void SendFragment (Ptr<Packet> fragment, uint64_t burstSize, uint16_t totFrags,
+  virtual void SendFragment (Ptr<Packet> fragment, uint64_t burstSize, uint16_t totFrags,
                      uint16_t fragmentSeq);
+
+  Ptr<Socket> m_socket; //!< Associated socket
+  Address m_peer; //!< Peer address
+  Address m_local; //!< Local address to bind to
+  bool m_connected; //!< True if connected
+  Ptr<BurstGenerator> m_burstGenerator; //!< Burst generator class
+  uint32_t m_fragSize; //!< Size of fragments including SeqTsSizeFragHeader
+  EventId m_nextBurstEvent; //!< Event id for the next packet burst
+  TypeId m_socketTid; //!< Type of the socket used
+  uint64_t m_totTxBursts; //!< Total bursts sent
+  uint64_t m_totTxFragments; //!< Total fragments sent
+  uint64_t m_totTxBytes; //!< Total bytes sent
+
+  //helpers
+  /**
+   * \brief Cancel all pending events.
+   */
+  void CancelEvents ();
+
+private:
+  // inherited from Application base class.
+  virtual void StartApplication (void); // Called at time specified by Start
+  virtual void StopApplication (void); // Called at time specified by Stop
+
 
   /**
    * \brief Handle a Connection Succeed event
@@ -168,17 +206,6 @@ private:
    */
   void ConnectionFailed (Ptr<Socket> socket);
 
-  Ptr<Socket> m_socket; //!< Associated socket
-  Address m_peer; //!< Peer address
-  Address m_local; //!< Local address to bind to
-  bool m_connected; //!< True if connected
-  Ptr<BurstGenerator> m_burstGenerator; //!< Burst generator class
-  uint32_t m_fragSize; //!< Size of fragments including SeqTsSizeFragHeader
-  EventId m_nextBurstEvent; //!< Event id for the next packet burst
-  TypeId m_socketTid; //!< Type of the socket used
-  uint64_t m_totTxBursts; //!< Total bursts sent
-  uint64_t m_totTxFragments; //!< Total fragments sent
-  uint64_t m_totTxBytes; //!< Total bytes sent
 
   // Traced Callbacks
   /// Callback for transmitted burst

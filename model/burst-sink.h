@@ -122,16 +122,6 @@ public:
 protected:
   virtual void DoDispose (void);
 
-private:
-  // inherited from Application base class.
-  virtual void StartApplication (void); // Called at time specified by Start
-  virtual void StopApplication (void); // Called at time specified by Stop
-
-  /**
-   * \brief Handle a fragment received by the application
-   * \param socket the receiving socket
-   */
-  void HandleRead (Ptr<Socket> socket);
   /**
    * \brief Handle an incoming connection
    * \param socket the incoming connection socket
@@ -162,18 +152,6 @@ private:
   };
 
   /**
-   * \brief Fragment received: assemble byte stream to extract SeqTsSizeFragHeader
-   * \param f received fragment
-   * \param from from address
-   * \param localAddress local address
-   *
-   * The method assembles a received byte stream and extracts SeqTsSizeFragHeader
-   * instances from the stream to export in a trace source.
-   */
-  void FragmentReceived (BurstHandler &burstHandler, const Ptr<Packet> &f, const Address &from,
-                         const Address &localAddress);
-
-  /**
    * \brief Hashing for the Address class
    * Needed to make Address the key of a map.
    */
@@ -197,7 +175,7 @@ private:
       return std::hash<uint32_t> () (a.GetIpv4 ().Get ());
     }
   };
-
+  
   std::unordered_map<Address, BurstHandler, AddressHash> m_burstHandlerMap; //!< Map of BurstHandlers, assuming a user only has one data stream
 
   // In the case of TCP, each socket accept returns a new socket, so the
@@ -217,6 +195,35 @@ private:
   /// Callbacks for tracing the burst Rx events, includes source, destination addresses, and headers
   TracedCallback<Ptr<const Packet>, const Address &, const Address &, const SeqTsSizeFragHeader &>
       m_rxBurstTrace;
+
+private:
+  // inherited from Application base class.
+  virtual void StartApplication (void); // Called at time specified by Start
+  virtual void StopApplication (void); // Called at time specified by Stop
+
+  /**
+   * \brief Handle a fragment received by the application
+   * \param socket the receiving socket
+   */
+  virtual void HandleRead (Ptr<Socket> socket);
+
+  /**
+   * \brief Simple burst handler
+   * Contains information regarding the current burst sequence number
+   */
+
+  /**
+   * \brief Fragment received: assemble byte stream to extract SeqTsSizeFragHeader
+   * \param f received fragment
+   * \param from from address
+   * \param localAddress local address
+   *
+   * The method assembles a received byte stream and extracts SeqTsSizeFragHeader
+   * instances from the stream to export in a trace source.
+   */
+  virtual void FragmentReceived (BurstHandler &burstHandler, const Ptr<Packet> &f, const Address &from,
+                         const Address &localAddress);
+
 };
 
 } // namespace ns3

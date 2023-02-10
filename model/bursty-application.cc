@@ -89,9 +89,28 @@ BurstyApplication::BurstyApplication ()
   NS_LOG_FUNCTION (this);
 }
 
+BurstyApplication::BurstyApplication(Address remote)
+    : m_socket(0),
+      m_connected(false),
+      m_totTxBursts(0),
+      m_totTxFragments(0),
+      m_totTxBytes(0)
+{
+  NS_LOG_FUNCTION(this);
+  m_peer = remote;
+  m_socketTid = UdpSocketFactory::GetTypeId();
+}
+
 BurstyApplication::~BurstyApplication ()
 {
   NS_LOG_FUNCTION (this);
+}
+
+void
+BurstyApplication::SetRemote(Address remote)
+{
+  NS_LOG_FUNCTION(this);
+  m_peer = remote;
 }
 
 Ptr<Socket>
@@ -194,6 +213,20 @@ BurstyApplication::CancelEvents ()
 
   // Cancel next burst event
   Simulator::Cancel (m_nextBurstEvent);
+}
+
+void
+BurstyApplication::SetBurstGenerator(Ptr<BurstGenerator> bG)
+{
+  NS_LOG_FUNCTION(this);
+  m_burstGenerator = bG;
+}
+
+void
+BurstyApplication::SetFragmentSize(uint32_t frag)
+{
+  NS_LOG_FUNCTION(this);
+  m_fragSize = frag;
 }
 
 void
