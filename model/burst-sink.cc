@@ -56,6 +56,11 @@ BurstSink::GetTypeId (void)
                    TypeIdValue (UdpSocketFactory::GetTypeId ()),
                    MakeTypeIdAccessor (&BurstSink::m_tid),
                    MakeTypeIdChecker ())
+    .AddAttribute("ErrorRate",
+                  "Value of the error rate at the application layer, default = 0",
+                  DoubleValue(0.0),
+                  MakeDoubleAccessor(&BurstSink::SetAppErrorRate),
+                  MakeDoubleChecker<double>())
     .AddTraceSource ("FragmentRx",
                      "A fragment has been received",
                      MakeTraceSourceAccessor (&BurstSink::m_rxFragmentTrace),
@@ -70,6 +75,10 @@ BurstSink::GetTypeId (void)
 BurstSink::BurstSink ()
 {
   NS_LOG_FUNCTION (this);
+
+  m_em = CreateObject<RateErrorModel>();
+  m_em->SetAttribute("ErrorUnit", EnumValue(2));
+  m_em->SetAttribute("ErrorRate", DoubleValue(m_rate));
 }
 
 BurstSink::~BurstSink ()
@@ -92,10 +101,32 @@ BurstSink::GetTotalRxFragments () const
 }
 
 uint64_t
+BurstSink::GetTotalOutOfOrderFragments() const
+{
+  NS_LOG_FUNCTION(this);
+  return m_outOfOrderFragments;
+}
+
+uint64_t
 BurstSink::GetTotalRxBursts () const
 {
   NS_LOG_FUNCTION (this);
   return m_totRxBursts;
+}
+
+uint64_t
+BurstSink::GetIncompleteBursts() const
+{
+  NS_LOG_FUNCTION(this);
+  return m_incompleteBursts;
+}
+
+void
+BurstSink::SetAppErrorRate(double err) 
+{
+  NS_LOG_FUNCTION(this);
+  m_rate = err;
+  m_em->SetAttribute("ErrorRate", DoubleValue(m_rate));
 }
 
 Ptr<Socket>
@@ -186,6 +217,11 @@ BurstSink::HandleRead (Ptr<Socket> socket)
   Address localAddress;
   while ((fragment = socket->RecvFrom (from)))
     {
+      if (m_em->IsCorrupt(fragment))
+      {
+        continue;
+      }
+
       if (fragment->GetSize () == 0)
         { //EOF
           break;
@@ -235,10 +271,6 @@ BurstSink::FragmentReceived (BurstHandler &burstHandler, const Ptr<Packet> &f, c
   f->PeekHeader (header);
   NS_ABORT_IF (header.GetSize () == 0);
 
-  m_totRxFragments++;
-  m_rxFragmentTrace (f, from, localAddress,
-                     header); // TODO should fragment still include header in trace?
-
   NS_LOG_DEBUG ("Get BurstHandler for from="
                 << from << " with m_currentBurstSeq=" << burstHandler.m_currentBurstSeq
                 << ", m_fragmentsMerged=" << burstHandler.m_fragmentsMerged
@@ -248,6 +280,7 @@ BurstSink::FragmentReceived (BurstHandler &burstHandler, const Ptr<Packet> &f, c
 
   if (header.GetSeq () < burstHandler.m_currentBurstSeq)
     {
+      m_outOfOrderFragments++;
       NS_LOG_LOGIC ("Ignoring fragment from previous burst. Fragment burst seq="
                     << header.GetSeq ()
                     << ", current burst seq=" << burstHandler.m_currentBurstSeq);
@@ -256,18 +289,27 @@ BurstSink::FragmentReceived (BurstHandler &burstHandler, const Ptr<Packet> &f, c
 
   if (header.GetSeq () > burstHandler.m_currentBurstSeq)
     {
+      if (burstHandler.m_fragmentsMerged < burstHandler.m_totFrags)
+      {
+          m_incompleteBursts++;
+      }
+      // std::cout << "Tot frags: " << burstHandler.m_totFrags << " arrived: " << burstHandler.m_fragmentsMerged + burstHandler.m_unorderedFragments.size() << std::endl ;
       // fragment of new burst: discard previous burst if incomplete
-      NS_LOG_LOGIC ("Start mering new burst seq "
+      NS_LOG_LOGIC ("Start merging new burst seq "
                     << header.GetSeq () << " (previous=" << burstHandler.m_currentBurstSeq << ")");
 
       burstHandler.m_currentBurstSeq = header.GetSeq ();
       burstHandler.m_fragmentsMerged = 0;
       burstHandler.m_unorderedFragments.clear ();
       burstHandler.m_burstBuffer = Create<Packet> (0);
+      burstHandler.m_totFrags = header.GetFrags();
     }
 
   if (header.GetSeq () == burstHandler.m_currentBurstSeq)
     {
+      m_totRxFragments++;
+      m_rxFragmentTrace (f, from, localAddress, header); // TODO should fragment still include header in trace?
+
       // fragment of current burst
       NS_ASSERT_MSG (header.GetFragSeq () >= burstHandler.m_fragmentsMerged,
                      header.GetFragSeq () << " >= " << burstHandler.m_fragmentsMerged);

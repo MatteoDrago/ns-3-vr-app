@@ -30,6 +30,10 @@
 #include "ns3/seq-ts-size-frag-header.h"
 #include <unordered_map>
 
+#include "ns3/enum.h"
+#include "ns3/double.h"
+#include "ns3/error-model.h"
+
 namespace ns3 {
 
 class Address;
@@ -91,12 +95,22 @@ public:
   /**
    * \return the total fragments received in this sink app
    */
-  uint64_t GetTotalRxFragments () const;
+  uint64_t GetTotalRxFragments() const;
+
+  /**
+   * \return the total fragments received out-of-order in this sink app
+   */
+  uint64_t GetTotalOutOfOrderFragments() const;
 
   /**
    * \return the total bursts received in this sink app
    */
   uint64_t GetTotalRxBursts () const;
+
+  /**
+   * \return the total bursts received in this sink app
+   */
+  uint64_t GetIncompleteBursts() const;
 
   /**
    * \return pointer to listening socket
@@ -107,6 +121,8 @@ public:
    * \return list of pointers to accepted sockets
    */
   std::list<Ptr<Socket>> GetAcceptedSockets (void) const;
+
+  void SetAppErrorRate(double err);
 
   /**
    * TracedCallback signature for a reception with addresses and SeqTsSizeFragHeader
@@ -145,6 +161,7 @@ protected:
    */
   struct BurstHandler
   {
+    uint16_t m_totFrags{0};
     uint64_t m_currentBurstSeq{0}; //!< Current burst sequence number
     uint16_t m_fragmentsMerged{0}; //!< Number of ordered fragments received and merged for the current burst
     std::map<uint16_t, const Ptr<Packet>> m_unorderedFragments; //!< The fragments received out-of-order, still to be merged
@@ -185,8 +202,13 @@ protected:
   Address m_local; //!< Local address to bind to
   TypeId m_tid; //!< Protocol TypeId
   uint64_t m_totRxBursts{0}; //!< Total bursts received
+  uint64_t m_incompleteBursts{0}; //!< Incompleted bursts
   uint64_t m_totRxFragments{0}; //!< Total fragments received
+  uint64_t m_outOfOrderFragments{0}; //!< Total fragments received out-of-order
   uint64_t m_totRxBytes{0}; //!< Total bytes received
+
+  Ptr<ErrorModel> m_em; //!< Error model to apply to received packets (for tests purposes)
+  double m_rate = 0; //!< Error rate to associate to the error model
 
   // Traced Callback
   /// Callback for tracing the fragment Rx events, includes source, destination addresses, and headers

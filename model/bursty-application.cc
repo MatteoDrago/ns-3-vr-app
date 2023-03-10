@@ -87,6 +87,7 @@ BurstyApplication::BurstyApplication ()
     : m_socket (0), m_connected (false), m_totTxBursts (0), m_totTxFragments (0), m_totTxBytes (0)
 {
   NS_LOG_FUNCTION (this);
+  m_minFragSize = 24; // TODO make it configurable
 }
 
 BurstyApplication::BurstyApplication(Address remote)
@@ -99,6 +100,7 @@ BurstyApplication::BurstyApplication(Address remote)
   NS_LOG_FUNCTION(this);
   m_peer = remote;
   m_socketTid = UdpSocketFactory::GetTypeId();
+  m_minFragSize = 24; // TODO make it configurable
 }
 
 BurstyApplication::~BurstyApplication ()
@@ -239,7 +241,7 @@ BurstyApplication::SendBurst ()
   uint32_t burstSize = 0;
   Time period;
   // packets must be at least as big as the header
-  while (burstSize < 24) // TODO: find a way to improve this
+  while (burstSize < m_minFragSize) // TODO: find a way to improve this
     {
       if (!m_burstGenerator->HasNextBurst ())
         {
@@ -267,6 +269,8 @@ void
 BurstyApplication::SendFragmentedBurst (uint32_t burstSize)
 {
   NS_LOG_FUNCTION (this << burstSize);
+
+  NS_LOG_DEBUG (Simulator::Now().GetSeconds() << " Node " << GetNode()->GetId() << " send fragmented burst.");
 
   // prepare header
   SeqTsSizeFragHeader hdrTmp;

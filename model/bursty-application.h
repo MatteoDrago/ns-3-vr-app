@@ -181,6 +181,7 @@ protected:
   uint64_t m_totTxBursts; //!< Total bursts sent
   uint64_t m_totTxFragments; //!< Total fragments sent
   uint64_t m_totTxBytes; //!< Total bytes sent
+  uint64_t m_minFragSize; //!< minimum allowed fragment size   
 
   //helpers
   /**
